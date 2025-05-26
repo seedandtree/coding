@@ -1,0 +1,5 @@
+git init
+git remote add origin https://github.com/your-username/rock-paper-ai.git
+git add .
+git commit -m "Initial commit with AI game"
+git push -u origin main
