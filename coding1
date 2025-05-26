@@ -1,4 +1,160 @@
 <html>
 <head></head> 
-<body></body>
+<body><!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>AI 가위바위보</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Arial Rounded MT Bold', 'Noto Sans KR', sans-serif;
+      background: linear-gradient(145deg, #f0f4ff, #dbe3f8);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      color: #334;
+      margin-bottom: 10px;
+    }
+
+    #webcam-container {
+      margin: 10px auto;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    button {
+      padding: 14px 24px;
+      margin: 10px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 25px;
+      background-color: #5a8dee;
+      color: white;
+      box-shadow: 0 6px 15px rgba(90, 141, 238, 0.3);
+      cursor: pointer;
+      transition: 0.2s ease-in-out;
+    }
+
+    button:hover {
+      background-color: #4169e1;
+      transform: scale(1.05);
+    }
+
+    #label-container {
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    #label-container div {
+      font-size: 1.1rem;
+      color: #333;
+    }
+
+    #result {
+      margin-top: 20px;
+      font-size: 1.8rem;
+      color: #222;
+      font-weight: bold;
+      transition: all 0.3s ease-in-out;
+    }
+
+    .bounce {
+      animation: bounce 0.6s ease;
+    }
+
+    @keyframes bounce {
+      0%   { transform: scale(1); }
+      30%  { transform: scale(1.3); }
+      100% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🤖 가위바위보 AI 게임</h1>
+  <button onclick="init()">Start Webcam</button>
+  <button onclick="playGame()">AI와 대결</button>
+
+  <div id="webcam-container"></div>
+  <div id="label-container"></div>
+  <div id="result"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest"></script>
+  <script>
+    const URL = "./my_model/";
+    let model, webcam, labelContainer, maxPredictions;
+    let currentUserGesture = "";
+
+    async function init() {
+      const modelURL = URL + "model.json";
+      const metadataURL = URL + "metadata.json";
+
+      model = await tmImage.load(modelURL, metadataURL);
+      maxPredictions = model.getTotalClasses();
+
+      const flip = true;
+      webcam = new tmImage.Webcam(200, 200, flip);
+      await webcam.setup();
+      await webcam.play();
+      window.requestAnimationFrame(loop);
+
+      document.getElementById("webcam-container").appendChild(webcam.canvas);
+      labelContainer = document.getElementById("label-container");
+      for (let i = 0; i < maxPredictions; i++) {
+        labelContainer.appendChild(document.createElement("div"));
+      }
+    }
+
+    async function loop() {
+      webcam.update();
+      await predict();
+      window.requestAnimationFrame(loop);
+    }
+
+    async function predict() {
+      const prediction = await model.predict(webcam.canvas);
+      prediction.sort((a, b) => b.probability - a.probability);
+      currentUserGesture = prediction[0].className;
+      for (let i = 0; i < maxPredictions; i++) {
+        labelContainer.childNodes[i].innerHTML =
+          prediction[i].className + ": " + prediction[i].probability.toFixed(2);
+      }
+    }
+
+    function playGame() {
+      const choices = ["Rock", "Paper", "Scissors"];
+      const aiChoice = choices[Math.floor(Math.random() * 3)];
+      let resultText = "";
+
+      if (currentUserGesture === aiChoice) {
+        resultText = `🤝 비김! (AI: ${aiChoice})`;
+      } else if (
+        (currentUserGesture === "Rock" && aiChoice === "Scissors") ||
+        (currentUserGesture === "Scissors" && aiChoice === "Paper") ||
+        (currentUserGesture === "Paper" && aiChoice === "Rock")
+      ) {
+        resultText = `🎉 이김! (AI: ${aiChoice})`;
+      } else {
+        resultText = `😢 짐! (AI: ${aiChoice})`;
+      }
+
+      const resultDiv = document.getElementById("result");
+      resultDiv.innerHTML = resultText;
+      resultDiv.classList.remove("bounce");
+      void resultDiv.offsetWidth; // re-trigger animation
+      resultDiv.classList.add("bounce");
+    }
+  </script>
+</body>
+</html>
+</body>
 </html>
